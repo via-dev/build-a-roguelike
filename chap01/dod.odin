@@ -1,11 +1,12 @@
 package main
 
-import t "../TermCL/"
-import tb "../TermCL/term"
 import "core:fmt"
 import "core:image"
 import _ "core:image/bmp"
 import "core:os"
+
+import t "../TermCL/"
+import tb "../TermCL/term"
 
 TXCOLS :: 80
 TXROWS :: 60
@@ -21,7 +22,7 @@ get_pixel_color :: proc(img: ^image.Image, x, y: int) -> t.Color_RGB {
 	return {red, green, blue}
 }
 
-dispaly_title :: proc(screen: ^t.Screen) {
+display_title :: proc(screen: ^t.Screen) {
 	title_img, img_error := image.load_from_bytes(TITLE_IMG)
 	if img_error != nil {
 		fmt.eprintln("Error loading title image:", img_error)
@@ -44,25 +45,27 @@ dispaly_title :: proc(screen: ^t.Screen) {
 
 	t.move_cursor(screen, ty, tx)
 	t.write(screen, txt)
+
+	t.blit(screen)
+
+	for {
+		_, proceed := t.read(screen).(t.Keyboard_Input)
+		if proceed do break
+	}
 }
 
 main :: proc() {
 	s := t.init_screen(tb.VTABLE)
 	defer t.destroy_screen(&s)
+
 	t.set_term_mode(&s, .Cbreak)
 	t.hide_cursor(true)
-	defer t.hide_cursor(false)
 
-	for {
-		t.clear(&s, .Everything)
-		defer t.blit(&s)
+	t.clear(&s, .Everything)
 
-		t.move_cursor(&s, 0, 0)
-		dispaly_title(&s)
+	t.move_cursor(&s, 0, 0)
 
-		input, input_ok := t.read(&s).(t.Keyboard_Input)
-		if input_ok && input.key == .Q {
-			break
-		}
-	}
+	display_title(&s)
+
+	t.hide_cursor(false)
 }
